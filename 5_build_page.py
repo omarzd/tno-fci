@@ -273,7 +273,7 @@ def build_page(july_dir, latest_dir, target_csv, out_dir):
   table {{ border-collapse: collapse; font-size: .9rem; margin: .8rem 0; }}
   th, td {{ padding: .25rem .9rem .25rem 0; text-align: left; border-bottom: 1px solid var(--grid); }}
   td:last-child, th:last-child {{ text-align: right; }}
-  #theme {{ position: absolute; opacity: 0; pointer-events: none; }}
+  #theme {{ position: fixed; top: 0; left: 0; opacity: 0; pointer-events: none; }}
   .theme-label {{ position: fixed; z-index: 10; top: .9rem; left: 1rem; background: var(--bg); cursor: pointer; font-size: .85rem; color: var(--muted);
     border: 1px solid var(--grid); border-radius: 999px; padding: .15rem .7rem; user-select: none; }}
   .theme-label:hover {{ color: var(--ink); }}
@@ -296,19 +296,19 @@ def build_page(july_dir, latest_dir, target_csv, out_dir):
 <h2>The July 2025 prediction, and what followed</h2>
 <p>On {july.generated.day} July 2025 the model, fitted on data through {month_name(july.last_input)}, predicted the PMI for {month_name(jp.index[0])} to {month_name(jp.index[-1])}. {crossing}</p>
 <figure>{chart_july}
-<figcaption>Black line (white in dark mode): the ISM PMI. Solid orange: the prediction of {july.generated.strftime('%-d %B %Y')}, TNO-FCI moved {july.lead} months forward and mapped to PMI points. Dashed: the same fit over the months it was fitted on.</figcaption></figure>
+<figcaption>Black line (white in dark mode): the ISM PMI. Orange: our model, moved {july.lead} months ahead.</figcaption></figure>
 {table([(month_name(p), f"{v:.1f}") for p, v in jp.items()], ["Month", "Predicted PMI"])}
 
 <h2>The {month_name(made)} prediction</h2>
 <p>Refitted on data through {month_name(latest.last_input)}, the model predicts the PMI for {month_name(lp.index[0])} to {month_name(lp.index[-1])}.</p>
 <figure>{chart_latest}
-<figcaption>Black line (white in dark mode): the ISM PMI. Solid orange: the prediction from the fit of {latest.generated.strftime('%-d %B %Y')}, lead {latest.lead} months. Dashed: the same fit over the months it was fitted on.</figcaption></figure>
+<figcaption>Black line (white in dark mode): the ISM PMI. Orange: our model, moved {latest.lead} months ahead.</figcaption></figure>
 {table([(month_name(p), f"{v:.1f}") for p, v in lp.items()], ["Month", "Predicted PMI"])}
 {stretch_note(latest)}
 
 <h2>How it tracks since {since}</h2>
 <figure>{chart_history}
-<figcaption>Black line (white in dark mode): the ISM PMI. Orange: TNO-FCI from the fit of {latest.generated.strftime('%-d %B %Y')}, moved {latest.lead} months forward and mapped to PMI points.</figcaption></figure>
+<figcaption>Black line (white in dark mode): the ISM PMI. Orange: our model, moved {latest.lead} months ahead.</figcaption></figure>
 <figure>{chart_scatter}
 <figcaption>Each dot is one month: TNO-FCI against the PMI {latest.lead} months later. Orange line: the straight line that maps TNO-FCI to PMI points. Highlighted dots, black in light mode and white in dark mode: the 12 most recent months whose PMI {latest.lead} months later is already known, showing how far real months land from the line.</figcaption></figure>
 
