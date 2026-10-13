@@ -296,19 +296,19 @@ def build_page(july_dir, latest_dir, target_csv, out_dir):
 <h2>The July 2025 prediction, and what followed</h2>
 <p>On {july.generated.day} July 2025 the model, fitted on data through {month_name(july.last_input)}, predicted the PMI for {month_name(jp.index[0])} to {month_name(jp.index[-1])}. {crossing}</p>
 <figure>{chart_july}
-<figcaption>Black line (white in dark mode): the ISM PMI. Orange: our model, moved {july.lead} months ahead.</figcaption></figure>
+<figcaption>Black line (white in dark mode): the ISM PMI. Orange: TNO-FCI {july.lead} months ahead.</figcaption></figure>
 {table([(month_name(p), f"{v:.1f}") for p, v in jp.items()], ["Month", "Predicted PMI"])}
 
 <h2>The {month_name(made)} prediction</h2>
 <p>Refitted on data through {month_name(latest.last_input)}, the model predicts the PMI for {month_name(lp.index[0])} to {month_name(lp.index[-1])}.</p>
 <figure>{chart_latest}
-<figcaption>Black line (white in dark mode): the ISM PMI. Orange: our model, moved {latest.lead} months ahead.</figcaption></figure>
+<figcaption>Black line (white in dark mode): the ISM PMI. Orange: TNO-FCI {latest.lead} months ahead.</figcaption></figure>
 {table([(month_name(p), f"{v:.1f}") for p, v in lp.items()], ["Month", "Predicted PMI"])}
 {stretch_note(latest)}
 
 <h2>How it tracks since {since}</h2>
 <figure>{chart_history}
-<figcaption>Black line (white in dark mode): the ISM PMI. Orange: our model, moved {latest.lead} months ahead.</figcaption></figure>
+<figcaption>Black line (white in dark mode): the ISM PMI. Orange: TNO-FCI {latest.lead} months ahead.</figcaption></figure>
 <figure>{chart_scatter}
 <figcaption>Each dot is one month: TNO-FCI against the PMI {latest.lead} months later. Orange line: the straight line that maps TNO-FCI to PMI points. Highlighted dots, black in light mode and white in dark mode: the 12 most recent months whose PMI {latest.lead} months later is already known, showing how far real months land from the line.</figcaption></figure>
 
