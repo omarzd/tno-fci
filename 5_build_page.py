@@ -246,6 +246,7 @@ def build_page(july_dir, latest_dir, target_csv, out_dir):
     page = f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>TNO-FCI: predicting the ISM Manufacturing PMI {lead_text} months ahead</title>
 <style>
   body {{ margin: 0; }}
@@ -273,11 +274,11 @@ def build_page(july_dir, latest_dir, target_csv, out_dir):
   th, td {{ padding: .25rem .9rem .25rem 0; text-align: left; border-bottom: 1px solid var(--grid); }}
   td:last-child, th:last-child {{ text-align: right; }}
   #theme {{ position: absolute; opacity: 0; pointer-events: none; }}
-  .theme-label {{ position: absolute; top: .9rem; left: 1rem; cursor: pointer; font-size: .85rem; color: var(--muted);
+  .theme-label {{ position: fixed; z-index: 10; top: .9rem; left: 1rem; background: var(--bg); cursor: pointer; font-size: .85rem; color: var(--muted);
     border: 1px solid var(--grid); border-radius: 999px; padding: .15rem .7rem; user-select: none; }}
   .theme-label:hover {{ color: var(--ink); }}
   #theme:focus-visible ~ .page .theme-label {{ outline: 2px solid var(--accent); }}
-  .github-corner svg {{ position: absolute; top: 0; right: 0; border: 0; fill: var(--ink); color: var(--bg); }}
+  .github-corner svg {{ position: fixed; z-index: 10; top: 0; right: 0; border: 0; fill: var(--ink); color: var(--bg); }}
   .github-corner:hover .octo-arm {{ animation: octo-wave 560ms ease-in-out; }}
   @keyframes octo-wave {{ 0%, 100% {{ transform: rotate(0); }} 20%, 60% {{ transform: rotate(-25deg); }} 40%, 80% {{ transform: rotate(10deg); }} }}
 </style></head><body>

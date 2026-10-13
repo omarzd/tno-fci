@@ -91,6 +91,7 @@ class BuildPageTest(unittest.TestCase):
         self.assertIn('<input type="checkbox" id="theme"', self.html)
         self.assertIn('<label for="theme"', self.html)
         self.assertIn("#theme:checked ~ .page", self.html)
+        self.assertIn('<meta name="color-scheme" content="light dark">', self.html)
 
     def test_page_ships_no_series_data(self):
         self.assertNotIn("<script", self.html.lower())
