@@ -76,3 +76,7 @@ The sample files are too short to fit a model; the scripts need the full history
 `check_export.py` fails if any data file holds more than the 5 sample rows, if an
 unexpected file sits at the top level, if a file names a local home-folder path, or if a
 commit carries an email other than the author's GitHub no-reply address.
+
+## License
+
+The code is MIT licensed; see `LICENSE`. The license covers the code only, not the data series, which belong to their providers.
