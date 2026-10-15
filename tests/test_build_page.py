@@ -42,8 +42,10 @@ class BuildPageTest(unittest.TestCase):
         self.july_pred = [50.0 + 2.0 * v for v in july_fci[-LEAD:]]
         # October 2026 fit: inputs through 2026-09, so it predicts 2026-10 .. 2027-06.
         oct_fci = [((i % 5) - 2) / 4 for i in range(45)]
-        write_fit(t("october"), "2023-01", oct_fci, 3.0, 49.0, 0.33, "2026-10-13 00:31:16")
-        self.oct_pred = [49.0 + 3.0 * v for v in oct_fci[-LEAD:]]
+        # Slope 2.8 keeps every predicted value off an exact half (3.0 gave 48.25), where the
+        # test's rounding and the page's refitted line can round different ways.
+        write_fit(t("october"), "2023-01", oct_fci, 2.8, 49.0, 0.33, "2026-10-13 00:31:16")
+        self.oct_pred = [49.0 + 2.8 * v for v in oct_fci[-LEAD:]]
         # Actual target: the July 2025 prediction misses by exactly 1.5 points every month.
         months = pd.period_range("2023-01", "2026-09", freq="M")
         actual = {m: 52.0 for m in months}
