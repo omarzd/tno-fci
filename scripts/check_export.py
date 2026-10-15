@@ -16,7 +16,7 @@ NOREPLY = "7592333+omarzd@users.noreply.github.com"
 ALLOWED = {".git", ".gitignore", "README.md", "LICENSE", "requirements.txt", "1_collect_data.py", "2_prep_raw_data.py",
            "3_tno_fci_calculator.py", "5_build_page.py", "lib", "util", "tests", "scripts", "docs", "data",
            # local only, gitignored
-           "output", "site", "__pycache__", ".venv", "venv", ".DS_Store"}
+           "output", "demo", "site", "__pycache__", ".venv", "venv", ".DS_Store"}
 
 
 def main():
@@ -33,7 +33,7 @@ def main():
                 if rows > SAMPLE_ROWS:
                     problems.append(f"{os.path.relpath(path, ROOT)} has {rows} rows; samples hold at most {SAMPLE_ROWS}")
     for dirpath, dirnames, filenames in os.walk(ROOT):
-        dirnames[:] = [d for d in dirnames if d not in (".git", "output", "site", "__pycache__", ".venv", "venv")]
+        dirnames[:] = [d for d in dirnames if d not in (".git", "output", "demo", "site", "__pycache__", ".venv", "venv")]
         for name in filenames:
             if name.endswith((".py", ".md", ".html", ".txt", ".csv")):
                 path = os.path.join(dirpath, name)

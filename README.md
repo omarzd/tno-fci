@@ -22,10 +22,33 @@ The script also trains several machine-learning models (random forest, gradient 
 SVR, regularized linear models) for comparison, and keeps the linear model when they score
 worse out of sample, which they do. That comparison is why a run takes several minutes.
 
-## Bring your own data
+## Data
 
 The data is licensed and isn't in this repo. Each file under `data/` holds its first 5 rows
-only, to show the exact format the scripts read. Replace them with full monthly exports.
+only, to show the exact format the scripts read. These sample files are too short to fit, so
+there are two ways to run the model: on demo data, or on your own exports.
+
+### Try it on demo data
+
+`scripts/make_demo_data.py` generates the six series, with the target following a weighted sum
+of the inputs a planted number of months later. The fit doesn't know that number. If it reports
+the lead you planted, the lead search works.
+
+```bash
+uv venv --python 3.12
+uv pip install -r requirements.txt
+.venv/bin/python scripts/make_demo_data.py --lead 7   # any lead from 3 to 18; --seed changes the data
+.venv/bin/python 2_prep_raw_data.py --demo            # demo/data/raw_all/ -> demo/data/clean_all/
+.venv/bin/python 3_tno_fci_calculator.py --demo       # fit -> demo/output/; should say "Optimal lag period: 7 months"
+```
+
+Everything the demo writes stays in `demo/`, which git ignores. It never touches `data/` or
+`output/`. The demo shows the method finds a lead that is really there. It doesn't reproduce the
+10-month lead on the real series; for that you need the real data.
+
+### Bring your own data
+
+Replace the sample files with full monthly exports.
 
 | Series | TradingView symbol | File in `data/raw_all/` | Columns |
 | --- | --- | --- | --- |
@@ -64,12 +87,13 @@ The page step compares an earlier fit's prediction (`--july`) with what followed
 the latest fit (`--latest`). It writes `site/index.html`: static HTML with inline SVG charts,
 no script and no data. The published page is that file, copied to `docs/`.
 
-The sample files are too short to fit a model; the scripts need the full history.
+These steps need your own data; the sample files are too short to fit. To run without it, see [Try it on demo data](#try-it-on-demo-data).
 
 ## Tests and the pre-push check
 
 ```bash
 .venv/bin/python -m unittest tests/test_build_page.py   # the page step, on synthetic fits
+.venv/bin/python -m unittest tests/test_demo_data.py    # the demo finds a planted lead; about 6 minutes
 .venv/bin/python scripts/check_export.py                # run before every push
 ```
 

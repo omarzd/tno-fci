@@ -202,11 +202,13 @@ class DataPreprocessor:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process TNO FCI raw data into clean format')
-    parser.add_argument('--data-dir', default='data', help='Data directory path')
+    where = parser.add_mutually_exclusive_group()
+    where.add_argument('--data-dir', default='data', help='Data directory path')
+    where.add_argument('--demo', action='store_true', help='Use the demo data in demo/data/ (see scripts/make_demo_data.py)')
     parser.add_argument('--summary', action='store_true', help='Show summary of clean data files')
     args = parser.parse_args()
     
-    preprocessor = DataPreprocessor(data_dir=args.data_dir)
+    preprocessor = DataPreprocessor(data_dir=os.path.join('demo', 'data') if args.demo else args.data_dir)
     
     if args.summary:
         preprocessor.show_clean_data_summary()

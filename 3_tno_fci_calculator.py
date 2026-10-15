@@ -3,6 +3,7 @@ import numpy as np
 from scipy.optimize import differential_evolution
 from scipy.stats import pearsonr
 from scipy import stats
+import argparse
 import os
 from datetime import datetime
 import warnings
@@ -25,8 +26,9 @@ except ImportError:
 warnings.filterwarnings('ignore')
 
 class TNOFCICalculator:
-    def __init__(self, data_dir='data', use_advanced_features=True, use_ml_models=True):
+    def __init__(self, data_dir='data', use_advanced_features=True, use_ml_models=True, output_dir='output'):
         self.data_dir = data_dir
+        self.output_dir = output_dir
         self.data = {}
         self.model_start_date = None
         self.correlation_start_date = None
@@ -551,8 +553,8 @@ class TNOFCICalculator:
             results = results.join(baseline_series, how='left')
         
         # Save main results file
-        output_path = 'output/fci_results.csv'
-        os.makedirs('output', exist_ok=True)
+        output_path = os.path.join(self.output_dir, 'fci_results.csv')
+        os.makedirs(self.output_dir, exist_ok=True)
         results.to_csv(output_path)
         
         print(f"✓ Results saved to {output_path}")
@@ -683,8 +685,8 @@ class TNOFCICalculator:
         model_info.append(f"Generated on: {datetime.now():%Y-%m-%d %H:%M:%S}")
         
         # Save to file
-        output_path = 'output/model_params.txt'
-        os.makedirs('output', exist_ok=True)
+        output_path = os.path.join(self.output_dir, 'model_params.txt')
+        os.makedirs(self.output_dir, exist_ok=True)
         with open(output_path, 'w') as f:
             f.write('\n'.join(model_info))
             
@@ -816,7 +818,7 @@ class TNOFCICalculator:
         summary.append("============================================================")
         
         # Save to file
-        output_path = 'output/fci_summary.txt'
+        output_path = os.path.join(self.output_dir, 'fci_summary.txt')
         with open(output_path, 'w') as f:
             f.write('\n'.join(summary))
             
@@ -827,16 +829,16 @@ class TNOFCICalculator:
         print("\n=== Archiving Results ===")
         
         # Create archive directory
-        archive_dir, timestamp = create_archive_directory()
-        save_timestamp(timestamp)
+        archive_dir, timestamp = create_archive_directory(output_dir=self.output_dir)
+        save_timestamp(timestamp, output_dir=self.output_dir)
         
         print(f"\nArchiving to: {archive_dir}")
         
         # Archive files - only the three main files
         files_to_archive = [
-            ('output/fci_results.csv', 'fci_results.csv'),
-            ('output/model_params.txt', 'model_params.txt'),
-            ('output/fci_summary.txt', 'fci_summary.txt')
+            (os.path.join(self.output_dir, 'fci_results.csv'), 'fci_results.csv'),
+            (os.path.join(self.output_dir, 'model_params.txt'), 'model_params.txt'),
+            (os.path.join(self.output_dir, 'fci_summary.txt'), 'fci_summary.txt')
         ]
         
         for source_path, archive_name in files_to_archive:
@@ -897,6 +899,12 @@ class TNOFCICalculator:
             print(f"R² equivalent improvement: {self.final_correlation**2 - self.baseline_correlation**2:+.6f}")
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Fit the TNO-FCI and write the results')
+    parser.add_argument('--demo', action='store_true',
+                        help='Read demo/data/ and write to demo/output/ (see scripts/make_demo_data.py)')
+    args = parser.parse_args()
+    root = 'demo' if args.demo else ''
     # Run with all enhancements
-    calculator = TNOFCICalculator(use_advanced_features=True, use_ml_models=True)
+    calculator = TNOFCICalculator(data_dir=os.path.join(root, 'data'), use_advanced_features=True,
+                                  use_ml_models=True, output_dir=os.path.join(root, 'output'))
     calculator.run()
