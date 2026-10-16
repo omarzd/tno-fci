@@ -1,7 +1,7 @@
 """Seam 1 (g01 spec #2): the page step, fed a July 2025 fit and a later fit.
 
-Each synthetic fit's target is an exact straight line of its TNO-FCI, so every number the
-page should state is known in advance.
+Each fit folder the test writes has a target that is an exact straight line of its TNO-FCI,
+so every number the page should state is known in advance.
 """
 import importlib.util
 import os
@@ -21,7 +21,7 @@ LEAD = 9
 
 
 def write_fit(folder, first_month, fci, slope, intercept, r2, generated):
-    """A fit folder as 3_fit_model.py leaves it: results plus model parameters."""
+    """A fit folder as 3_tno_fci_calculator.py leaves it: results plus model parameters."""
     os.makedirs(folder)
     dates = pd.period_range(first_month, periods=len(fci), freq="M").to_timestamp(how="end").normalize()
     fwd = [intercept + slope * v for v in fci]
@@ -68,7 +68,7 @@ class BuildPageTest(unittest.TestCase):
 
     def test_states_when_prediction_and_pmi_crossed_50(self):
         self.assertIn("back above 50 from", self.html)
-        self.assertRegex(self.html, r"crossed 50 in|has not crossed 50")
+        self.assertRegex(self.html, r"crossed 50 in|has stayed below 50")
 
     def test_states_the_october_2026_prediction(self):
         for v in (self.oct_pred[0], self.oct_pred[-1]):

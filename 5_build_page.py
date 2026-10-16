@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Build the public results page: the July 2025 prediction against the target that followed,
-and the latest fit's prediction, tracking since 1971 and correlation.
+"""Build the public results page from the July 2025 fit, the latest fit and the target.
 
-A fit folder is what the fit script leaves: a results CSV (TNO-FCI per month and the target
-one lead later) and its text reports. A fit's prediction maps its TNO-FCI to the target with
-the straight line of "target, one lead later" on TNO-FCI. The page is static HTML with inline
-SVG charts, no script and no series data.
+The page shows the July 2025 prediction against the target that followed, and the latest fit's
+prediction. It also shows how that fit's TNO-FCI has tracked the target since the first month
+it predicts, as a line chart and a scatter. A fit's prediction maps its TNO-FCI to the target
+with the least-squares straight line of the target one lead later on TNO-FCI. The page is static
+HTML with inline SVG charts, no script and no series data.
 """
 import argparse
 import html
@@ -53,14 +53,15 @@ class Fit:
 
     @property
     def fitted(self):
-        """The line over months the fit was fitted on, plus the first predicted month so the
+        """The path over the months the fit saw, plus the first predicted month so the
         two lines meet."""
         return self.path[self.path.index <= self.last_input + 1]
 
 
 def load_fit(folder):
-    """Read a fit folder: fci_results.csv or tno_fci_results.csv plus text reports. The lead
-    comes from the forward column's name; R² and the run time from the reports."""
+    """Read a fit folder as 3_tno_fci_calculator.py leaves it: fci_results.csv or
+    tno_fci_results.csv plus text reports. The lead comes from the forward column's name;
+    R² and the "Generated on" time from the reports."""
     results = next(os.path.join(folder, n) for n in ("fci_results.csv", "tno_fci_results.csv")
                    if os.path.exists(os.path.join(folder, n)))
     reports = ""
@@ -149,7 +150,7 @@ def line_chart(lines, start, end, band=None, marker=None, title=""):
 
 def scatter_chart(fit, title=""):
     """TNO-FCI against the target one lead later, with the fitted straight line and the 12
-    most recent months whose outcome is known."""
+    most recent months whose target is known."""
     W, H, L, R, T, B = 600, 380, 44, 24, 16, 52
     xs, ys = fit.fci[fit.target_later.index], fit.target_later
     x_lo, x_hi = nice_range(fit.fci.min(), fit.fci.max(), 1)
@@ -188,7 +189,8 @@ def palette_vars(p):
 
 
 def stretch_note(fit):
-    """Plain words for predicted months that rest on TNO-FCI beyond anything the fit saw."""
+    """A paragraph for predicted months that rest on TNO-FCI higher than in any month the fit saw,
+    or "" when there are none."""
     pred, past = fit.prediction, fit.path[fit.path.index <= fit.last_input]
     beyond = pred[pred > past.max()]
     if not len(beyond):
@@ -197,12 +199,13 @@ def stretch_note(fit):
     inputs = beyond.index - fit.lead
     since = (past.index[0] - fit.lead).year
     if len(beyond) <= 2:
-        what = f"The predictions for {joined(beyond.index)} rest on {joined(inputs)}"
+        what = (f"The prediction for {joined(beyond.index)} rests on {joined(inputs)}," if one
+                else f"The predictions for {joined(beyond.index)} rest on {joined(inputs)},")
     else:
         what = f"{len(beyond)} of these predictions rest on input months"
-    return (f"<p>{what}, when TNO-FCI rose higher than in any month since {since}. The model has never seen "
-            f"readings that high, so {'this number is' if one else 'these numbers are'} less reliable than the rest: "
-            f"take {'it' if one else 'them'} as a sign of strong expansion rather than {'a precise value' if one else 'precise values'}.</p>")
+    return (f"<p>{what} when TNO-FCI rose higher than in any month since {since}. The model has never seen "
+            f"readings that high, so {'this number is' if one else 'these numbers are'} less reliable than the rest. "
+            f"Take {'it' if one else 'them'} as a sign of strong expansion rather than {'a precise value' if one else 'precise values'}.</p>")
 
 
 def recent_chart(fit, target, end, band_label, label, title, marker=None):
@@ -221,10 +224,10 @@ def build_page(july_dir, latest_dir, target_csv, out_dir):
     pred_above = jp[jp > 50]
     after = target[target.index > july.last_input]
     actual_above = after[after >= 50]
-    crossing = (f"The prediction had the PMI back above 50 from {month_name(pred_above.index[0])}; "
-                if len(pred_above) else "The prediction kept the PMI below 50; ")
-    crossing += (f"the PMI itself crossed 50 in {month_name(actual_above.index[0])}."
-                 if len(actual_above) else "the PMI itself has not crossed 50 since.")
+    crossing = (f"The prediction had the ISM PMI back above 50 from {month_name(pred_above.index[0])}; "
+                if len(pred_above) else "The prediction kept the ISM PMI below 50; ")
+    crossing += (f"the ISM PMI itself crossed 50 in {month_name(actual_above.index[0])}."
+                 if len(actual_above) else "the ISM PMI itself has stayed below 50 since.")
     leads = sorted({july.lead, latest.lead})
     lead_text = " to ".join(str(n) for n in leads)
     made = latest.generated.to_period("M")
@@ -238,7 +241,7 @@ def build_page(july_dir, latest_dir, target_csv, out_dir):
     chart_history = line_chart(
         [("", target, "ink", False), ("TNO-FCI", latest.path[latest.path.index <= latest.last_input], "accent", False)],
         latest.path.index[0], latest.last_input,
-        title=f"The ISM PMI since {since} and TNO-FCI moved {latest.lead} months forward")
+        title=f"The ISM PMI since {since} and TNO-FCI {latest.lead} months ahead")
     chart_scatter = scatter_chart(latest, title=f"TNO-FCI against the ISM PMI {latest.lead} months later")
 
     roles = ("ink", "accent", "soft", "band", "grid", "muted")
@@ -289,34 +292,35 @@ def build_page(july_dir, latest_dir, target_csv, out_dir):
 <div class="wrap">
 <h1>TNO-FCI: predicting the ISM Manufacturing PMI {lead_text} months ahead</h1>
 <p class="lede">A financial conditions index built from five monthly market and policy series.</p>
+<p>TNO-FCI is one number per month, built from the Fed funds rate, the US dollar index, gold, oil and silver. A linear model combines features made from those five series, weighted so that this month's value tracks the ISM Manufacturing PMI {lead_text} months later. The ISM PMI is a monthly survey of US factory activity; above 50 means expansion.</p>
+
 <p>Inspired by the financial conditions index of Raoul Pal's Global Macro Investor (GMI), which GMI uses to look about nine months ahead of the ISM PMI (<a href="{INSPIRATION_URL}">The GMI Top 5 Weekly Charts That Make You Go Hmmm...</a>, August 2023).</p>
 
-<p>TNO-FCI is one number per month, built from the Fed funds rate, the US dollar index, gold, oil and silver. A linear model combines features made from those five series, weighted so that this month's value tracks the ISM Manufacturing PMI {lead_text} months later. The PMI is a monthly survey of US factory activity; above 50 means expansion.</p>
-
 <h2>The July 2025 prediction, and what followed</h2>
-<p>On {july.generated.day} July 2025 the model, fitted on data through {month_name(july.last_input)}, predicted the PMI for {month_name(jp.index[0])} to {month_name(jp.index[-1])}. {crossing}</p>
+<p>On {july.generated.day} July 2025 the model, fitted on data through {month_name(july.last_input)}, predicted the ISM PMI for {month_name(jp.index[0])} to {month_name(jp.index[-1])}. {crossing}</p>
 <figure>{chart_july}
 <figcaption>Black line (white in dark mode): the ISM PMI. Orange: TNO-FCI {july.lead} months ahead.</figcaption></figure>
-{table([(month_name(p), f"{v:.1f}") for p, v in jp.items()], ["Month", "Predicted PMI"])}
+{table([(month_name(p), f"{v:.1f}") for p, v in jp.items()], ["Month", "Predicted ISM PMI"])}
 
 <h2>The {month_name(made)} prediction</h2>
-<p>Refitted on data through {month_name(latest.last_input)}, the model predicts the PMI for {month_name(lp.index[0])} to {month_name(lp.index[-1])}.</p>
+<p>Refitted on data through {month_name(latest.last_input)}, the model predicts the ISM PMI for {month_name(lp.index[0])} to {month_name(lp.index[-1])}.</p>
 <figure>{chart_latest}
 <figcaption>Black line (white in dark mode): the ISM PMI. Orange: TNO-FCI {latest.lead} months ahead.</figcaption></figure>
-{table([(month_name(p), f"{v:.1f}") for p, v in lp.items()], ["Month", "Predicted PMI"])}
+{table([(month_name(p), f"{v:.1f}") for p, v in lp.items()], ["Month", "Predicted ISM PMI"])}
 {stretch_note(latest)}
 
 <h2>How it tracks since {since}</h2>
 <figure>{chart_history}
 <figcaption>Black line (white in dark mode): the ISM PMI. Orange: TNO-FCI {latest.lead} months ahead.</figcaption></figure>
 <figure>{chart_scatter}
-<figcaption>Each dot is one month: TNO-FCI against the PMI {latest.lead} months later. Orange line: the straight line that maps TNO-FCI to PMI points. Highlighted dots, black in light mode and white in dark mode: the 12 most recent months whose PMI {latest.lead} months later is already known, showing how far real months land from the line.</figcaption></figure>
+<figcaption>Each dot is one month's TNO-FCI against the ISM PMI {latest.lead} months later. Orange line: the straight line that maps TNO-FCI to ISM PMI points. Highlighted dots, black in light mode and white in dark mode: the 12 most recent months whose ISM PMI {latest.lead} months later is known. They show how far real months land from the line.</figcaption></figure>
+<p>In-sample, the fit has an R² of {latest.r2:.2f} ({july.r2:.2f} in July 2025), so read the prediction as a direction rather than a precise numerical forecast.</p>
 
 <h2>Method</h2>
-<p>Alongside the five series, the model uses features built from them: their values 3, 6 and 12 months back, momentum, moving averages, volatility and ratios such as gold to silver. The lead is chosen by testing 3 to 18 months and keeping the one where TNO-FCI correlates best with the PMI that many months later; a straight line then maps TNO-FCI to PMI points. In-sample, the fit explains R² {latest.r2:.2f} of the PMI's variation ({july.r2:.2f} in July 2025), so read the prediction as a direction rather than a precise numerical forecast.</p>
+<p>Alongside the five series, the model uses features built from them: their values 3, 6 and 12 months back, momentum, moving averages, volatility, ratios such as gold to silver, and a few interaction, squared and seasonal terms. The model tests every lead from 3 to 18 months and keeps the one where a weighted sum of the five series correlates best with the ISM PMI that many months later. A straight line then maps TNO-FCI to ISM PMI points.</p>
 
 <h2>Data and code</h2>
-<p>Monthly series, mostly exported from TradingView: TVC:DXY, TVC:GOLD, TVC:USOIL and TVC:SILVER, plus ECONOMICS:USBCOI (ISM PMI) and ECONOMICS:USINTR (Fed funds rate) through June 2025. From July 2025 the ISM PMI comes from ISM's monthly releases and the Fed funds rate (upper bound of the target range) from FOMC statements. The data isn't redistributed; the <a href="{CODE_URL}">code</a> runs on your own copies.</p>
+<p>Monthly series, mostly exported from TradingView: TVC:DXY, TVC:GOLD, TVC:USOIL and TVC:SILVER, plus ECONOMICS:USBCOI (ISM PMI) and ECONOMICS:USINTR (Fed funds rate) through June 2025. From July 2025 the ISM PMI comes from ISM's monthly releases and the Fed funds rate (upper bound of the target range) from FOMC statements. The data isn't redistributed; the <a href="{CODE_URL}">code</a> runs on demo data it generates, or on your own copies.</p>
 </div></div>
 </body></html>
 """

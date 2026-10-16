@@ -44,12 +44,12 @@
 <div class="wrap">
 <h1>TNO-FCI: predicting the ISM Manufacturing PMI 10 months ahead</h1>
 <p class="lede">A financial conditions index built from five monthly market and policy series.</p>
+<p>TNO-FCI is one number per month, built from the Fed funds rate, the US dollar index, gold, oil and silver. A linear model combines features made from those five series, weighted so that this month's value tracks the ISM Manufacturing PMI 10 months later. The ISM PMI is a monthly survey of US factory activity; above 50 means expansion.</p>
+
 <p>Inspired by the financial conditions index of Raoul Pal's Global Macro Investor (GMI), which GMI uses to look about nine months ahead of the ISM PMI (<a href="https://raoulpal.substack.com/p/the-gmi-top-5-weekly-charts-that-e8c">The GMI Top 5 Weekly Charts That Make You Go Hmmm...</a>, August 2023).</p>
 
-<p>TNO-FCI is one number per month, built from the Fed funds rate, the US dollar index, gold, oil and silver. A linear model combines features made from those five series, weighted so that this month's value tracks the ISM Manufacturing PMI 10 months later. The PMI is a monthly survey of US factory activity; above 50 means expansion.</p>
-
 <h2>The July 2025 prediction, and what followed</h2>
-<p>On 26 July 2025 the model, fitted on data through June 2025, predicted the PMI for July 2025 to April 2026. The prediction had the PMI back above 50 from July 2025; the PMI itself crossed 50 in January 2026.</p>
+<p>On 26 July 2025 the model, fitted on data through June 2025, predicted the ISM PMI for July 2025 to April 2026. The prediction had the ISM PMI back above 50 from July 2025; the ISM PMI itself crossed 50 in January 2026.</p>
 <figure><svg class="chart" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 340" role="img" font-size="15"><title>The ISM PMI and the July 2025 prediction</title>
 <rect class="f-band" x="335.2" y="16" width="73.8" height="288"/>
 <text class="f-accent" x="341.2" y="30">predicted in July 2025</text>
@@ -77,10 +77,10 @@
 <polyline class="s-accent" points="335.2,120.6 343.4,125.0 351.6,44.1 359.8,124.5 368.0,153.6 376.2,120.1 384.4,97.4 392.6,81.2 400.8,100.4 409.0,89.4" fill="none" stroke-width="2.6" stroke-linejoin="round"/>
 </svg>
 <figcaption>Black line (white in dark mode): the ISM PMI. Orange: TNO-FCI 10 months ahead.</figcaption></figure>
-<table><thead><tr><th>Month</th><th>Predicted PMI</th></tr></thead><tbody><tr><td>July 2025</td><td>52.7</td></tr><tr><td>August 2025</td><td>52.4</td></tr><tr><td>September 2025</td><td>58.0</td></tr><tr><td>October 2025</td><td>52.5</td></tr><tr><td>November 2025</td><td>50.4</td></tr><tr><td>December 2025</td><td>52.8</td></tr><tr><td>January 2026</td><td>54.3</td></tr><tr><td>February 2026</td><td>55.5</td></tr><tr><td>March 2026</td><td>54.1</td></tr><tr><td>April 2026</td><td>54.9</td></tr></tbody></table>
+<table><thead><tr><th>Month</th><th>Predicted ISM PMI</th></tr></thead><tbody><tr><td>July 2025</td><td>52.7</td></tr><tr><td>August 2025</td><td>52.4</td></tr><tr><td>September 2025</td><td>58.0</td></tr><tr><td>October 2025</td><td>52.5</td></tr><tr><td>November 2025</td><td>50.4</td></tr><tr><td>December 2025</td><td>52.8</td></tr><tr><td>January 2026</td><td>54.3</td></tr><tr><td>February 2026</td><td>55.5</td></tr><tr><td>March 2026</td><td>54.1</td></tr><tr><td>April 2026</td><td>54.9</td></tr></tbody></table>
 
 <h2>The October 2026 prediction</h2>
-<p>Refitted on data through September 2026, the model predicts the PMI for October 2026 to July 2027.</p>
+<p>Refitted on data through September 2026, the model predicts the ISM PMI for October 2026 to July 2027.</p>
 <figure><svg class="chart" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 340" role="img" font-size="15"><title>The ISM PMI and the October 2026 prediction</title>
 <line class="s-grid" x1="40" x2="450" y1="304.0" y2="304.0"/>
 <text class="f-muted" x="32" y="308.0" text-anchor="end">45</text>
@@ -109,11 +109,11 @@
 <text class="f-accent" x="458.0" y="178.2" font-weight="600">Prediction</text>
 </svg>
 <figcaption>Black line (white in dark mode): the ISM PMI. Orange: TNO-FCI 10 months ahead.</figcaption></figure>
-<table><thead><tr><th>Month</th><th>Predicted PMI</th></tr></thead><tbody><tr><td>October 2026</td><td>57.1</td></tr><tr><td>November 2026</td><td>56.7</td></tr><tr><td>December 2026</td><td>58.1</td></tr><tr><td>January 2027</td><td>53.1</td></tr><tr><td>February 2027</td><td>50.3</td></tr><tr><td>March 2027</td><td>54.6</td></tr><tr><td>April 2027</td><td>56.4</td></tr><tr><td>May 2027</td><td>56.3</td></tr><tr><td>June 2027</td><td>53.3</td></tr><tr><td>July 2027</td><td>51.8</td></tr></tbody></table>
+<table><thead><tr><th>Month</th><th>Predicted ISM PMI</th></tr></thead><tbody><tr><td>October 2026</td><td>57.1</td></tr><tr><td>November 2026</td><td>56.7</td></tr><tr><td>December 2026</td><td>58.1</td></tr><tr><td>January 2027</td><td>53.1</td></tr><tr><td>February 2027</td><td>50.3</td></tr><tr><td>March 2027</td><td>54.6</td></tr><tr><td>April 2027</td><td>56.4</td></tr><tr><td>May 2027</td><td>56.3</td></tr><tr><td>June 2027</td><td>53.3</td></tr><tr><td>July 2027</td><td>51.8</td></tr></tbody></table>
 
 
 <h2>How it tracks since 1972</h2>
-<figure><svg class="chart" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 340" role="img" font-size="15"><title>The ISM PMI since 1972 and TNO-FCI moved 10 months forward</title>
+<figure><svg class="chart" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 340" role="img" font-size="15"><title>The ISM PMI since 1972 and TNO-FCI 10 months ahead</title>
 <line class="s-grid" x1="40" x2="450" y1="304.0" y2="304.0"/>
 <text class="f-muted" x="32" y="308.0" text-anchor="end">20</text>
 <line class="s-grid" x1="40" x2="450" y1="256.0" y2="256.0"/>
@@ -823,12 +823,13 @@
 <circle class="f-ink" cx="337.8" cy="148.6" r="4.2"/>
 <text class="f-muted" x="52" y="30">R-squared 0.46</text>
 </svg>
-<figcaption>Each dot is one month: TNO-FCI against the PMI 10 months later. Orange line: the straight line that maps TNO-FCI to PMI points. Highlighted dots, black in light mode and white in dark mode: the 12 most recent months whose PMI 10 months later is already known, showing how far real months land from the line.</figcaption></figure>
+<figcaption>Each dot is one month's TNO-FCI against the ISM PMI 10 months later. Orange line: the straight line that maps TNO-FCI to ISM PMI points. Highlighted dots, black in light mode and white in dark mode: the 12 most recent months whose ISM PMI 10 months later is known. They show how far real months land from the line.</figcaption></figure>
+<p>In-sample, the fit has an R² of 0.46 (0.43 in July 2025), so read the prediction as a direction rather than a precise numerical forecast.</p>
 
 <h2>Method</h2>
-<p>Alongside the five series, the model uses features built from them: their values 3, 6 and 12 months back, momentum, moving averages, volatility and ratios such as gold to silver. The lead is chosen by testing 3 to 18 months and keeping the one where TNO-FCI correlates best with the PMI that many months later; a straight line then maps TNO-FCI to PMI points. In-sample, the fit explains R² 0.46 of the PMI's variation (0.43 in July 2025), so read the prediction as a direction rather than a precise numerical forecast.</p>
+<p>Alongside the five series, the model uses features built from them: their values 3, 6 and 12 months back, momentum, moving averages, volatility, ratios such as gold to silver, and a few interaction, squared and seasonal terms. The model tests every lead from 3 to 18 months and keeps the one where a weighted sum of the five series correlates best with the ISM PMI that many months later. A straight line then maps TNO-FCI to ISM PMI points.</p>
 
 <h2>Data and code</h2>
-<p>Monthly series, mostly exported from TradingView: TVC:DXY, TVC:GOLD, TVC:USOIL and TVC:SILVER, plus ECONOMICS:USBCOI (ISM PMI) and ECONOMICS:USINTR (Fed funds rate) through June 2025. From July 2025 the ISM PMI comes from ISM's monthly releases and the Fed funds rate (upper bound of the target range) from FOMC statements. The data isn't redistributed; the <a href="https://github.com/omarzd/tno-fci">code</a> runs on your own copies.</p>
+<p>Monthly series, mostly exported from TradingView: TVC:DXY, TVC:GOLD, TVC:USOIL and TVC:SILVER, plus ECONOMICS:USBCOI (ISM PMI) and ECONOMICS:USINTR (Fed funds rate) through June 2025. From July 2025 the ISM PMI comes from ISM's monthly releases and the Fed funds rate (upper bound of the target range) from FOMC statements. The data isn't redistributed; the <a href="https://github.com/omarzd/tno-fci">code</a> runs on demo data it generates, or on your own copies.</p>
 </div></div>
 </body></html>

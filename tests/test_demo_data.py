@@ -1,7 +1,7 @@
 """Seam 1 (g04 spec #10): the README's demo commands, run as a stranger runs them.
 
 Demo data with a planted lead goes in; the fit must report that lead. Runs in a temporary copy
-of the repo. The fit also compares the ML models, so this test takes several minutes.
+of the repo. The fit searches 92 weights, so this test takes about 4 minutes.
 """
 import filecmp
 import os

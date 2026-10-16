@@ -2,6 +2,7 @@
 
 A financial conditions index that predicts the ISM Manufacturing PMI about 10 months ahead.
 The results page is at **https://omarzd.github.io/tno-fci/**.
+This repo is a snapshot from October 2026. The maintained copy is not public.
 
 Inspired by the financial conditions index of Raoul Pal's Global Macro Investor (GMI), which
 GMI uses to look about nine months ahead of the ISM PMI
@@ -10,17 +11,22 @@ TNO is the author's TradingView handle, TechNerdOmar.
 
 ## The model
 
-TNO-FCI is one number per month, built from five monthly series: the Fed funds rate, the US
-dollar index, gold, oil and silver. `3_tno_fci_calculator.py` builds 92 features from them
-(each series' values 3, 6 and 12 months back, momentum, moving averages, volatility, ratios
-such as gold to silver, and a few interaction and seasonal terms) and combines them linearly.
-It tests every lead from 3 to 18 months and keeps the one where TNO-FCI correlates best with
-the PMI that many months later. On data through September 2026 that lead is 10 months, with
-an in-sample R² of 0.46. A straight line then maps TNO-FCI to PMI points.
+TNO-FCI is one number per month, built from five monthly input series: the Fed funds rate, the
+US dollar index, gold, oil and silver. `3_tno_fci_calculator.py` builds 92 features from them
+and combines them linearly. The features include each series' values 3, 6 and 12 months back,
+momentum, moving averages, volatility, ratios such as gold to silver, and a few interaction,
+squared and seasonal terms. Before building the features, the script tests every lead from 3
+to 18 months and keeps the one where a weighted sum of the five series correlates best with the
+ISM PMI that many months later. It fits TNO-FCI at that lead only. On data through September
+2026 that lead is 10 months, with an in-sample R² of 0.46. `5_build_page.py` then maps TNO-FCI
+to ISM PMI points with a straight line fitted on the same months.
 
-The script also trains several machine-learning models (random forest, gradient boosting,
-SVR, regularized linear models) for comparison, and keeps the linear model when they score
-worse out of sample, which they do. That comparison is why a run takes several minutes.
+The script also trains several machine-learning models for comparison: random forest, gradient
+boosting, SVR and regularized linear models. It holds out the last 24 months to test them and
+takes the one with the best R² there. It switches to that model only if its correlation on
+those months beats the linear model's in-sample correlation. On the real data it doesn't; on
+demo data it can. The comparison takes seconds. Most of a fit's several minutes go to the
+search for the 92 weights.
 
 ## Data
 
@@ -31,8 +37,8 @@ there are two ways to run the model: on demo data, or on your own exports.
 ### Try it on demo data
 
 `scripts/make_demo_data.py` generates the six series, with the target following a weighted sum
-of the inputs a planted number of months later. The fit doesn't know that number. If it reports
-the lead you planted, the lead search works.
+of the input series a planted number of months later. The fit doesn't know that number. If it
+reports the lead you planted, the lead search works.
 
 ```bash
 uv venv --python 3.12
@@ -42,8 +48,7 @@ uv pip install -r requirements.txt
 .venv/bin/python 3_tno_fci_calculator.py --demo       # fit -> demo/output/; should say "Optimal lag period: 7 months"
 ```
 
-Everything the demo writes stays in `demo/`, which git ignores. It never touches `data/` or
-`output/`. The demo shows the method finds a lead that is really there. It doesn't reproduce the
+Everything the demo writes stays in `demo/`, which git ignores. The demo doesn't reproduce the
 10-month lead on the real series; for that you need the real data.
 
 ### Bring your own data
@@ -60,15 +65,17 @@ Replace the sample files with full monthly exports.
 | Silver | `TVC:SILVER` | `TVC_SILVER*.csv` | `time,open,high,low,close` |
 
 Use the monthly timeframe (1M). `time` is the date TradingView gives the monthly bar, its first trading day. Keep one file per
-series: `2_prep_raw_data.py` reads the first file whose name starts with the pattern, so two
-exports of one series side by side means either could be used. Extra columns in an export are
-ignored.
+series. `2_prep_raw_data.py` reads the first file whose name starts with the pattern, so with
+two exports of one series side by side it may read either. It ignores extra columns in an
+export.
 
 TradingView no longer exports the two `ECONOMICS:` series. Since July 2025 the page uses ISM's
-monthly releases for the PMI and FOMC statements for the Fed funds rate (the upper bound of the
-target range, as it stood at month end), entered by hand in the same format.
+monthly releases for the ISM PMI and FOMC statements for the Fed funds rate (the upper bound
+of the Fed's target range, as it stood at month end), entered by hand in the same format.
 
 ## Run it
+
+These steps need your own data. To run without it, see [Try it on demo data](#try-it-on-demo-data).
 
 Python 3.12 with [uv](https://docs.astral.sh/uv/):
 
@@ -84,22 +91,16 @@ uv pip install -r requirements.txt
 the scripts resample with the `'M'` frequency, which pandas 3 removed.
 
 The page step compares an earlier fit's prediction (`--july`) with what followed, and shows
-the latest fit (`--latest`). It writes `site/index.html`: static HTML with inline SVG charts,
-no script and no data. The published page is that file, copied to `docs/`.
-
-These steps need your own data; the sample files are too short to fit. To run without it, see [Try it on demo data](#try-it-on-demo-data).
+the latest fit (`--latest`). It writes `site/index.html`. The published page is that file,
+copied to `docs/`.
 
 ## Tests and the pre-push check
 
 ```bash
-.venv/bin/python -m unittest tests/test_build_page.py   # the page step, on synthetic fits
-.venv/bin/python -m unittest tests/test_demo_data.py    # the demo finds a planted lead; about 6 minutes
+.venv/bin/python -m unittest tests/test_build_page.py   # the page step, on fit folders the test writes
+.venv/bin/python -m unittest tests/test_demo_data.py    # the demo finds a planted lead; about 4 minutes
 .venv/bin/python scripts/check_export.py                # run before every push
 ```
-
-`check_export.py` fails if any data file holds more than the 5 sample rows, if an
-unexpected file sits at the top level, if a file names a local home-folder path, or if a
-commit carries an email other than the author's GitHub no-reply address.
 
 ## License
 
