@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run before every push. Fails if this repo would publish licensed data or private things.
+"""Run before every push of a public copy. Fails if this repo would publish licensed data or private things.
 
 - Every CSV under data/ holds at most SAMPLE_ROWS rows: samples show the format, nothing more.
 - Only the expected top-level entries exist.
@@ -13,10 +13,9 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SAMPLE_ROWS = 5
 NOREPLY = "7592333+omarzd@users.noreply.github.com"
-ALLOWED = {".git", ".gitignore", "README.md", "LICENSE", "requirements.txt", "1_collect_data.py", "2_prep_raw_data.py",
-           "3_tno_fci_calculator.py", "5_build_page.py", "lib", "util", "tests", "scripts", "docs", "data",
+ALLOWED = {".git", ".gitignore", "README.md", "LICENSE", "pyproject.toml", "fci", "tests", "scripts", "docs", "data",
            # local only, gitignored
-           "output", "demo", "site", "__pycache__", ".venv", "venv", ".DS_Store"}
+           "output", "demo", "site", "__pycache__", ".venv", "venv", ".DS_Store", "tno_fci.egg-info"}
 
 
 def main():

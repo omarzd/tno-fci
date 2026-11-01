@@ -1,59 +1,51 @@
 # TNO-FCI
 
 A financial conditions index that predicts the ISM Manufacturing PMI about 10 months ahead.
-The results page is at **https://omarzd.github.io/tno-fci/**.
-This repo is a snapshot from October 2026. The maintained copy is not public.
+The public results page, https://omarzd.github.io/fci/, is a snapshot from October 2026;
+its source is `docs/index.html`.
 
 Inspired by the financial conditions index of Raoul Pal's Global Macro Investor (GMI), which
 GMI uses to look about nine months ahead of the ISM PMI
 ([The GMI Top 5 Weekly Charts That Make You Go Hmmm...](https://raoulpal.substack.com/p/the-gmi-top-5-weekly-charts-that-e8c), August 2023).
-TNO is the author's TradingView handle, TechNerdOmar.
+TNO is the organization authoring this FOSS copy to distinguish it from the original closed GMI FCI.
 
 ## The model
 
-TNO-FCI is one number per month, built from five monthly input series: the Fed funds rate, the
-US dollar index, gold, oil and silver. `3_tno_fci_calculator.py` builds 92 features from them
-and combines them linearly. The features include each series' values 3, 6 and 12 months back,
-momentum, moving averages, volatility, ratios such as gold to silver, and a few interaction,
-squared and seasonal terms. Before building the features, the script tests every lead from 3
-to 18 months and keeps the one where a weighted sum of the five series correlates best with the
-ISM PMI that many months later. It fits TNO-FCI at that lead only. On data through September
-2026 that lead is 10 months, with an in-sample R² of 0.46. `5_build_page.py` then maps TNO-FCI
-to ISM PMI points with a straight line fitted on the same months.
+TNO-FCI is one number per month: a weighted sum of five monthly input series, the Fed funds
+rate, the US dollar index, gold, oil and silver. A straight line maps it to ISM PMI points
+some months later, the lead. Each fit picks its lead by a walk-forward search: for every lead
+from 9 to 18 months it refits month by month on the data known at the time and scores the
+predictions on months that fit hadn't seen. The docstring of `fci/fit.py` defines the fit and
+what its record holds.
 
-The script also trains several machine-learning models for comparison: random forest, gradient
-boosting, SVR and regularized linear models. It holds out the last 24 months to test them and
-takes the one with the best R² there. It switches to that model only if its correlation on
-those months beats the linear model's in-sample correlation. On the real data it doesn't; on
-demo data it can. The comparison takes seconds. Most of a fit's several minutes go to the
-search for the 92 weights.
+The July 2025 prediction came from an earlier model of 92 features built from the same five
+series. Its archived run holds the licensed series, so only the real-data copy keeps it, in
+`output/archived_runs/202507261556`; the page shows it as published. Fits since use five
+weights, because they scored better on months the fit hadn't seen.
 
-## Data
+## Run it on the demo data
 
-The data is licensed and isn't in this repo. Each file under `data/` holds its first 5 rows
-only, to show the exact format the scripts read. These sample files are too short to fit, so
-there are two ways to run the model: on demo data, or on your own exports.
+The series are licensed, so this repo can't ship them. The demo data stands in: six generated
+series, with the target following a weighted sum of the input series a planted number of months
+later. If the fit reports the lead you planted, the lead search works.
 
-### Try it on demo data
-
-`scripts/make_demo_data.py` generates the six series, with the target following a weighted sum
-of the input series a planted number of months later. The fit doesn't know that number. If it
-reports the lead you planted, the lead search works.
+Python 3.12 with [uv](https://docs.astral.sh/uv/), from the repo root:
 
 ```bash
 uv venv --python 3.12
-uv pip install -r requirements.txt
-.venv/bin/python scripts/make_demo_data.py --lead 7   # any lead from 3 to 18; --seed changes the data
-.venv/bin/python 2_prep_raw_data.py --demo            # demo/data/raw_all/ -> demo/data/clean_all/
-.venv/bin/python 3_tno_fci_calculator.py --demo       # fit -> demo/output/; should say "Optimal lag period: 7 months"
+uv pip install -e .
+.venv/bin/python scripts/make_demo_data.py --lead 10  # any lead from 9 to 18; --seed changes the data
+.venv/bin/fci all --demo                              # prep and fit under demo/; should say "lead 10 months"
 ```
 
-Everything the demo writes stays in `demo/`, which git ignores. The demo doesn't reproduce the
-10-month lead on the real series; for that you need the real data.
+`--demo` reads and writes only under `demo/`, which git ignores, and stops after the fit: no
+page is built from demo data.
 
-### Bring your own data
+## Bring your own data
 
-Replace the sample files with full monthly exports.
+`data/raw_all/` holds the sample files: the first 5 rows of each series, exactly as exported,
+to show the format. They are too short to fit. Replace each with a full monthly export from
+TradingView, one file per series. `fci prep` stops if a series has two.
 
 | Series | TradingView symbol | File in `data/raw_all/` | Columns |
 | --- | --- | --- | --- |
@@ -64,44 +56,39 @@ Replace the sample files with full monthly exports.
 | WTI crude oil | `TVC:USOIL` | `TVC_USOIL*.csv` | `time,open,high,low,close` |
 | Silver | `TVC:SILVER` | `TVC_SILVER*.csv` | `time,open,high,low,close` |
 
-Use the monthly timeframe (1M). `time` is the date TradingView gives the monthly bar, its first trading day. Keep one file per
-series. `2_prep_raw_data.py` reads the first file whose name starts with the pattern, so with
-two exports of one series side by side it may read either. It ignores extra columns in an
-export.
+Use the monthly timeframe (1M). `time` is the date TradingView gives the monthly bar, its first
+trading day. `fci prep` ignores extra columns. The docstring of `fci/prep.py` says which close a month
+keeps and how a missing month is filled. TradingView no longer exports the two `ECONOMICS:`
+series, so their recent rows come by hand: the ISM PMI from ISM's monthly release, and the Fed
+funds rate as the upper bound of the Fed's target range at month end, from the FOMC statements.
 
-TradingView no longer exports the two `ECONOMICS:` series. Since July 2025 the page uses ISM's
-monthly releases for the ISM PMI and FOMC statements for the Fed funds rate (the upper bound
-of the Fed's target range, as it stood at month end), entered by hand in the same format.
-
-## Run it
-
-These steps need your own data. To run without it, see [Try it on demo data](#try-it-on-demo-data).
-
-Python 3.12 with [uv](https://docs.astral.sh/uv/):
+Each step reads the files the step before it wrote and writes its own, so any one re-runs alone:
 
 ```bash
-uv venv --python 3.12
-uv pip install -r requirements.txt
-.venv/bin/python 2_prep_raw_data.py        # raw exports -> data/clean_all/
-.venv/bin/python 3_tno_fci_calculator.py   # fit -> output/, archived in output/archived_runs/<time>/
-.venv/bin/python 5_build_page.py --july output/archived_runs/<an earlier run> --latest output
+.venv/bin/fci prep      # data/raw_all/ -> output/clean/<series>.csv
+.venv/bin/fci fit       # output/clean/ -> a new record in output/fits/<time>.json
+.venv/bin/fci predict   # the newest record -> output/predictions/<time>.csv
+.venv/bin/fci page      # the July 2025 fit and the newest record, with their predictions -> site/index.html
 ```
 
-`1_collect_data.py` reports which raw files are out of date. `pandas` stays below 3 because
-the scripts resample with the `'M'` frequency, which pandas 3 removed.
+Each step's module docstring in `fci/` says what it reads and writes. `fci page`, and `fci all`,
+which runs the four steps in order, also need the archived July 2025 run, so on this copy they
+stop and say so. `fci page --july` takes another archived run in its place.
 
-The page step compares an earlier fit's prediction (`--july`) with what followed, and shows
-the latest fit (`--latest`). It writes `site/index.html`. The published page is that file,
-copied to `docs/`.
-
-## Tests and the pre-push check
+## Tests
 
 ```bash
-.venv/bin/python -m unittest tests/test_build_page.py   # the page step, on fit folders the test writes
-.venv/bin/python -m unittest tests/test_demo_data.py    # the demo finds a planted lead; about 4 minutes
-.venv/bin/python scripts/check_export.py                # run before every push
+.venv/bin/python -m unittest discover -s tests   # each test file runs in seconds
 ```
+
+The suite runs on the demo data. Tests that need the archived July 2025 run skip, and say why,
+when it is absent.
+
+`scripts/check_export.py` runs before every push of a public copy: it fails if a CSV under
+`data/` holds more than 5 rows, among other checks. `scripts/export_public.py` builds the public
+copy from the real-data copy.
 
 ## License
 
-The code is MIT licensed; see `LICENSE`. The license covers the code only, not the data series, which belong to their providers.
+The code is MIT licensed; see `LICENSE`. The license covers the code only, not the data series,
+which belong to their providers.

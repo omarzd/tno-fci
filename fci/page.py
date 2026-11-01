@@ -1,22 +1,24 @@
-#!/usr/bin/env python3
-"""Build the public results page from the July 2025 fit, the latest fit and the target.
+"""Render the results page: the July 2025 prediction against the target that followed, the
+latest fit's prediction, and how that fit's TNO-FCI has tracked the target, as line charts and
+a scatter. The page is static HTML with inline SVG charts, no script and no series data.
 
-The page shows the July 2025 prediction against the target that followed, and the latest fit's
-prediction. It also shows how that fit's TNO-FCI has tracked the target since the first month
-it predicts, as a line chart and a scatter. A fit's prediction maps its TNO-FCI to the target
-with the least-squares straight line of the target one lead later on TNO-FCI. The page is static
-HTML with inline SVG charts, no script and no series data.
+`fci page` reads the July 2025 fit, the latest fit (the newest record by default), their
+prediction files from `fci predict`, and the clean target, and writes site/index.html. When the
+latest fit is a record, the Method section also states its lag test from `fci fit`.
 """
-import argparse
 import html
+import math
 import os
-import re
 from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
 
-CODE_URL = "https://github.com/omarzd/tno-fci"
+from fci import StepError
+from fci import predict as predicting
+from fci.fit import TARGET, load_clean
+
+CODE_URL = "https://github.com/omarzd/fci"
 INSPIRATION_URL = "https://raoulpal.substack.com/p/the-gmi-top-5-weekly-charts-that-e8c"
 # One palette per theme. Charts are inline SVG and colour by class, so the theme toggle
 # recolours them along with the page.
@@ -36,6 +38,9 @@ class Fit:
     target_later: pd.Series  # the target one lead later, indexed by input month
     slope: float
     intercept: float
+    model: str  # "five weights" (fci fit), "92 features" or "five series" (archived runs)
+    predicted: pd.Series = None  # from the prediction file; None computes it from the line
+    lag_r2: dict = None  # in-sample R² by lag in months, from fci fit's lag test
 
     @property
     def last_input(self):
@@ -49,6 +54,8 @@ class Fit:
     @property
     def prediction(self):
         """The target path for the lead's worth of months after the last input month."""
+        if self.predicted is not None:
+            return self.predicted
         return self.path[self.path.index > self.last_input]
 
     @property
@@ -58,32 +65,57 @@ class Fit:
         return self.path[self.path.index <= self.last_input + 1]
 
 
-def load_fit(folder):
-    """Read a fit folder as 3_tno_fci_calculator.py leaves it: fci_results.csv or
-    tno_fci_results.csv plus text reports. The lead comes from the forward column's name;
-    R² and the "Generated on" time from the reports."""
-    results = next(os.path.join(folder, n) for n in ("fci_results.csv", "tno_fci_results.csv")
-                   if os.path.exists(os.path.join(folder, n)))
-    reports = ""
-    for name in sorted(os.listdir(folder)):
-        if name.endswith(".txt"):
-            with open(os.path.join(folder, name)) as fh:
-                reports += fh.read() + "\n"
-    r2 = float(re.search(r"R-squared: ([\d.]+)", reports).group(1))
-    generated = pd.Timestamp(re.search(r"Generated on: ([\d\- :]+)", reports).group(1).strip())
-    df = pd.read_csv(results)
-    fwd_col = next(c for c in df.columns if re.fullmatch(r"ISM_\d+m_Forward", c))
-    lead = int(re.search(r"\d+", fwd_col).group())
-    months = pd.PeriodIndex(pd.to_datetime(df["Date"]), freq="M")
-    fci = pd.Series(df["TNO_FCI"].values, index=months)
-    later = pd.Series(df[fwd_col].values, index=months).dropna()
-    slope, intercept = np.polyfit(fci[later.index].values, later.values, 1)
-    return Fit(lead, r2, generated, fci, later, slope, intercept)
+# What the intro says the model does, and the Method section, for the latest fit's kind.
+TERMS = {
+    "five weights": "weighs those five series so that",
+    "five series": "weighs those five series so that",
+    "92 features": "combines features made from those five series, weighted so that",
+}
+METHOD = {
+    "five weights": ("TNO-FCI weighs the five series themselves, each scaled by its average and spread over the "
+                     "months the fit saw. The fit tests every lead from 9 to 18 months. For each lead it refits month "
+                     "by month on the data known at the time and predicts every month of the lead's path. It grades "
+                     "each path against guessing the ISM PMI's average known at the time, and the first and last "
+                     "months weigh most. In that grade a miss of 2 points or less costs nothing, and a predicted "
+                     "month may match the ISM PMI one month early or late. The fit keeps the lead whose paths grade "
+                     "best. A straight line then maps TNO-FCI to ISM PMI points."),
+    "five series": ("TNO-FCI weighs the five series themselves, each scaled by its average and spread. The model tests "
+                    "every lead from 3 to 18 months and keeps the one where that weighted sum correlates best with "
+                    "the ISM PMI that many months later. A straight line then maps TNO-FCI to ISM PMI points."),
+    "92 features": ("Alongside the five series, the model uses features built from them: their values 3, 6 and 12 "
+                    "months back, momentum, moving averages, volatility, ratios such as gold to silver, and a few "
+                    "interaction, squared and seasonal terms. The model tests every lead from 3 to 18 months and "
+                    "keeps the one where a weighted sum of the five series correlates best with the ISM PMI that "
+                    "many months later. A straight line then maps TNO-FCI to ISM PMI points."),
+}
 
 
-def load_target(csv_path):
-    df = pd.read_csv(csv_path)
-    return pd.Series(df.iloc[:, 1].values, index=pd.PeriodIndex(pd.to_datetime(df.iloc[:, 0]), freq="M"))
+def from_loaded(loaded, output_dir):
+    """A page Fit from fci.predict's LoadedFit, with its prediction from the prediction file."""
+    if loaded.r2 is None or loaded.generated is None:
+        raise StepError(f"{loaded.name} records no R-squared or fit date, which the page states")
+    path = predicting.prediction_path(output_dir, loaded.name)
+    if not os.path.exists(path):
+        raise StepError(f"no prediction file {path}; run fci predict for {loaded.name}")
+    try:
+        df = pd.read_csv(path)
+        predicted = pd.Series(df[TARGET].to_numpy(), index=pd.PeriodIndex(df["month"], freq="M"))
+    except (ValueError, KeyError, pd.errors.EmptyDataError) as e:  # DateParseError is a ValueError
+        raise StepError(f"{path} isn't a prediction file; run fci predict for {loaded.name} again ({e!r})") from e
+    expected = predicting.prediction(loaded)
+    if not (predicted.index.equals(expected.index) and np.allclose(predicted.to_numpy(), expected.to_numpy())):
+        raise StepError(f"{path} doesn't match its fit; run fci predict for {loaded.name} again")
+    return Fit(loaded.lead, loaded.r2, loaded.generated, loaded.tnofci.dropna(), loaded.later,
+               loaded.slope, loaded.intercept, loaded.model, predicted, loaded.lag_r2)
+
+
+def lag_sentence(fit):
+    """The lag test, for a fit that has one. The bound rounds up so "or less" stays true."""
+    if not fit.lag_r2:
+        return ""
+    bound = math.ceil(round(max(fit.lag_r2.values()) * 100, 6)) / 100
+    return (" Shifted the other way, as if it lagged the ISM PMI, the fit explains almost nothing "
+            f"(R² {bound:.2f} or less at every lag from 1 to 12 months).")
 
 
 def month_name(p):
@@ -216,9 +248,13 @@ def recent_chart(fit, target, end, band_label, label, title, marker=None):
         marker=marker, title=title)
 
 
-def build_page(july_dir, latest_dir, target_csv, out_dir):
-    july, latest, target = load_fit(july_dir), load_fit(latest_dir), load_target(target_csv)
-    os.makedirs(out_dir, exist_ok=True)
+
+def render(july, latest, target, out_dir):
+    """Write index.html for the July 2025 fit and the latest fit, over the target series."""
+    try:
+        os.makedirs(out_dir, exist_ok=True)
+    except OSError as e:
+        raise StepError(f"can't write the page to {out_dir}: {e.strerror}") from e
 
     jp, lp = july.prediction, latest.prediction
     pred_above = jp[jp > 50]
@@ -226,11 +262,24 @@ def build_page(july_dir, latest_dir, target_csv, out_dir):
     actual_above = after[after >= 50]
     crossing = (f"The prediction had the ISM PMI back above 50 from {month_name(pred_above.index[0])}; "
                 if len(pred_above) else "The prediction kept the ISM PMI below 50; ")
-    crossing += (f"the ISM PMI itself crossed 50 in {month_name(actual_above.index[0])}."
-                 if len(actual_above) else "the ISM PMI itself has stayed below 50 since.")
+    if len(actual_above):
+        crossing += f"the ISM PMI itself crossed 50 in {month_name(actual_above.index[0])}."
+    elif len(after):
+        crossing += "the ISM PMI itself has stayed below 50 since."
+    else:
+        crossing += f"there is no ISM PMI after {month_name(july.last_input)} yet to compare."
     leads = sorted({july.lead, latest.lead})
     lead_text = " to ".join(str(n) for n in leads)
     made = latest.generated.to_period("M")
+    two_models = july.model == "92 features" and latest.model == "five weights"
+    terms = TERMS[latest.model]
+    july_model = (" This prediction came from 92 features built from the five series; predictions since come from "
+                  "five weights, chosen because they scored better on months the fit hadn't seen." if two_models else "")
+    method = METHOD[latest.model] + lag_sentence(latest)
+    if two_models:
+        method += (" The July 2025 prediction came from a linear model of 92 features built from the same five "
+                   "series, such as lags, momentum, moving averages, volatility and ratios; predictions since come "
+                   "from five weights, chosen because they scored better on months the fit hadn't seen.")
     since = latest.path.index[0].year
 
     chart_july = recent_chart(july, target, max(target.index[-1], jp.index[-1]), "predicted in July 2025",
@@ -292,18 +341,18 @@ def build_page(july_dir, latest_dir, target_csv, out_dir):
 <div class="wrap">
 <h1>TNO-FCI: predicting the ISM Manufacturing PMI {lead_text} months ahead</h1>
 <p class="lede">A financial conditions index built from five monthly market and policy series.</p>
-<p>TNO-FCI is one number per month, built from the Fed funds rate, the US dollar index, gold, oil and silver. A linear model combines features made from those five series, weighted so that this month's value tracks the ISM Manufacturing PMI {lead_text} months later. The ISM PMI is a monthly survey of US factory activity; above 50 means expansion.</p>
+<p>TNO-FCI is one number per month, built from the Fed funds rate, the US dollar index, gold, oil and silver. A linear model {terms} this month's value tracks the ISM Manufacturing PMI {lead_text} months later. The ISM PMI is a monthly survey of US factory activity; above 50 means expansion.</p>
 
 <p>Inspired by the financial conditions index of Raoul Pal's Global Macro Investor (GMI), which GMI uses to look about nine months ahead of the ISM PMI (<a href="{INSPIRATION_URL}">The GMI Top 5 Weekly Charts That Make You Go Hmmm...</a>, August 2023).</p>
 
 <h2>The July 2025 prediction, and what followed</h2>
-<p>On {july.generated.day} July 2025 the model, fitted on data through {month_name(july.last_input)}, predicted the ISM PMI for {month_name(jp.index[0])} to {month_name(jp.index[-1])}. {crossing}</p>
+<p>On {july.generated.day} {july.generated:%B %Y} the model, fitted on data through {month_name(july.last_input)}, predicted the ISM PMI for {month_name(jp.index[0])} to {month_name(jp.index[-1])}. {crossing}{july_model}</p>
 <figure>{chart_july}
 <figcaption>Black line (white in dark mode): the ISM PMI. Orange: TNO-FCI {july.lead} months ahead.</figcaption></figure>
 {table([(month_name(p), f"{v:.1f}") for p, v in jp.items()], ["Month", "Predicted ISM PMI"])}
 
 <h2>The {month_name(made)} prediction</h2>
-<p>Refitted on data through {month_name(latest.last_input)}, the model predicts the ISM PMI for {month_name(lp.index[0])} to {month_name(lp.index[-1])}.</p>
+<p>Fitted on {latest.generated.day} {latest.generated:%B %Y} on data through {month_name(latest.last_input)}, with a lead of {latest.lead} months, the model predicts the ISM PMI for {month_name(lp.index[0])} to {month_name(lp.index[-1])}.</p>
 <figure>{chart_latest}
 <figcaption>Black line (white in dark mode): the ISM PMI. Orange: TNO-FCI {latest.lead} months ahead.</figcaption></figure>
 {table([(month_name(p), f"{v:.1f}") for p, v in lp.items()], ["Month", "Predicted ISM PMI"])}
@@ -317,7 +366,7 @@ def build_page(july_dir, latest_dir, target_csv, out_dir):
 <p>In-sample, the fit has an R² of {latest.r2:.2f} ({july.r2:.2f} in July 2025), so read the prediction as a direction rather than a precise numerical forecast.</p>
 
 <h2>Method</h2>
-<p>Alongside the five series, the model uses features built from them: their values 3, 6 and 12 months back, momentum, moving averages, volatility, ratios such as gold to silver, and a few interaction, squared and seasonal terms. The model tests every lead from 3 to 18 months and keeps the one where a weighted sum of the five series correlates best with the ISM PMI that many months later. A straight line then maps TNO-FCI to ISM PMI points.</p>
+<p>{method}</p>
 
 <h2>Data and code</h2>
 <p>Monthly series, mostly exported from TradingView: TVC:DXY, TVC:GOLD, TVC:USOIL and TVC:SILVER, plus ECONOMICS:USBCOI (ISM PMI) and ECONOMICS:USINTR (Fed funds rate) through June 2025. From July 2025 the ISM PMI comes from ISM's monthly releases and the Fed funds rate (upper bound of the target range) from FOMC statements. The data isn't redistributed; the <a href="{CODE_URL}">code</a> runs on demo data it generates, or on your own copies.</p>
@@ -330,15 +379,13 @@ def build_page(july_dir, latest_dir, target_csv, out_dir):
     return path
 
 
-def main():
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--july", default="output/archived_runs/202507261556")
-    ap.add_argument("--latest", default="output")
-    ap.add_argument("--target", default="data/clean_all/ismpmi_clean.csv")
-    ap.add_argument("--out", default="site")
-    a = ap.parse_args()
-    print(build_page(a.july, a.latest, a.target, a.out))
-
-
-if __name__ == "__main__":
-    main()
+def run(paths, july=None, latest=None, out="site"):
+    if paths.is_demo:
+        raise StepError("no page is built from demo data (g04); run fci page without --demo")
+    load = lambda path: from_loaded(predicting.load_fit(path, paths.clean), paths.output)
+    july_fit = load(july or paths.july_2025)
+    latest_fit = load(latest or predicting.newest_record(paths.fits))
+    if latest_fit.model == "five weights" and not latest_fit.lag_r2:  # archived runs have no lag test
+        raise StepError("the latest fit records no lag test, which the page states; run fci fit again")
+    target = load_clean(paths.clean)[TARGET].dropna()
+    return [render(july_fit, latest_fit, target, out)]

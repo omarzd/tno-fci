@@ -11,7 +11,7 @@ import os
 import numpy as np
 import pandas as pd
 
-MONTHS = 360  # 30 years: enough months for every lead from 3 to 18
+MONTHS = 360  # 30 years: enough months for every lead from 9 to 18
 MONTHS_HELD = np.arange(MONTHS) // 3 * 3  # each month reads the first month of its quarter
 DEMO_RAW = os.path.join("demo", "data", "raw_all")
 
@@ -56,11 +56,11 @@ def generate(lead, seed):
 
 def main():
     parser = argparse.ArgumentParser(description="Write demo data with a planted lead")
-    parser.add_argument("--lead", type=int, default=7, help="months the target follows the inputs by (3 to 18)")
+    parser.add_argument("--lead", type=int, default=10, help="months the target follows the inputs by (9 to 18)")
     parser.add_argument("--seed", type=int, default=42, help="same seed, same demo data")
     args = parser.parse_args()
-    if not 3 <= args.lead <= 18:
-        parser.error("--lead must be from 3 to 18, the leads the fit searches")
+    if not 9 <= args.lead <= 18:
+        parser.error("--lead must be from 9 to 18, the leads the fit searches")
 
     inputs, target = generate(args.lead, args.seed)
     months = pd.date_range("1995-01-01", periods=MONTHS, freq="MS").strftime("%Y-%m-%d")
@@ -72,7 +72,7 @@ def main():
         pd.DataFrame({"time": months, "open": close, "high": close, "low": close, "close": close}).to_csv(
             os.path.join(DEMO_RAW, FILES[name]), index=False)
     print(f"Demo data with a planted lead of {args.lead} months written to {DEMO_RAW}/")
-    print("Next: 2_prep_raw_data.py --demo, then 3_tno_fci_calculator.py --demo")
+    print("Next: fci prep --demo, then fci fit --demo, or fci all --demo")
 
 
 if __name__ == "__main__":
