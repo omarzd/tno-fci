@@ -299,6 +299,7 @@ def render(july, latest, target, out_dir):
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex">
 <title>TNO-FCI: predicting the ISM Manufacturing PMI {lead_text} months ahead</title>
 <style>
   body {{ margin: 0; }}
@@ -370,6 +371,8 @@ def render(july, latest, target, out_dir):
 
 <h2>Data and code</h2>
 <p>Monthly series, mostly exported from TradingView: TVC:DXY, TVC:GOLD, TVC:USOIL and TVC:SILVER, plus ECONOMICS:USBCOI (ISM PMI) and ECONOMICS:USINTR (Fed funds rate) through June 2025. From July 2025 the ISM PMI comes from ISM's monthly releases and the Fed funds rate (upper bound of the target range) from FOMC statements. The data isn't redistributed; the <a href="{CODE_URL}">code</a> runs on demo data it generates, or on your own copies.</p>
+<p>You can get each series yourself: the dollar index, gold and silver from TradingView, the ISM PMI from ISM, the Fed funds rate from FRED, and the energy prices from EIA. The data isn't offered on request, because the TradingView and ISM licences forbid it. For questions about the method or the results, write to <a href="mailto:economic.struggle220@passmail.net">economic.struggle220@passmail.net</a>.</p>
+<p>ISM® PMI® data: Institute for Supply Management</p>
 </div></div>
 </body></html>
 """

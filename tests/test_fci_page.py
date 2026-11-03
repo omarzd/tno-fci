@@ -196,6 +196,21 @@ class FciPageTest(unittest.TestCase):
             fh.write("x")
         self.assertIn("taken", self.page_fails("--july", JULY, "--out", "taken"))
 
+    def test_data_and_code_names_where_each_series_can_be_had_and_offers_a_contact(self):
+        section = self.sections(self.page())["Data and code"]
+        text = re.sub(r"<[^>]+>", "", section)
+        for provider in ("TradingView", "ISM", "FRED", "EIA"):
+            self.assertIn(provider, text)
+        self.assertIn("isn't offered on request", text)
+        self.assertIn('<a href="mailto:economic.struggle220@passmail.net">', section)
+
+    def test_credits_ism_for_the_ism_pmi(self):
+        self.assertIn("ISM® PMI® data: Institute for Supply Management", self.page())
+
+    def test_the_head_asks_search_engines_not_to_list_the_page(self):
+        head = self.page().split("</head>")[0]
+        self.assertIn('<meta name="robots" content="noindex">', head)
+
     def test_demo_data_gets_no_page(self):
         self.assertIn("demo", self.page_fails("--demo"))
 
