@@ -26,6 +26,7 @@ def main(argv=None):
             step.add_argument("--july", help=f"the July 2025 fit; default: {Paths.real().july_2025}")
             step.add_argument("--latest", help="the latest fit; default: the newest record")
             step.add_argument("--out", default="site", help="the folder index.html goes in")
+            step.add_argument("--written", help="the date the footer says the page was written, YYYY-MM-DD; default: today")
     args = parser.parse_args(argv)
 
     paths = Paths.demo() if args.demo else Paths.real()
