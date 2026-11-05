@@ -470,10 +470,10 @@ def render(july, latest, target, out_dir, written):
     most_recent = f"The {len(chart.recent)} most recent months"
     figure_scatter = figure(4, f"The ISM PMI against TNO-FCI from {latest.lead} months before", chart, [
         [("dot", "One month"), ("recent", most_recent)],
-        [("accent", f"The model, mapping TNO-FCI to the ISM PMI (in-sample R² {latest.r2:.2f})"),
+        [("accent", f"The straight line mapping TNO-FCI to the ISM PMI (in-sample R² {latest.r2:.2f})"),
          ("ring", f"The {month_name(made)} prediction, read off the line")]],
         note=(f"Each dot pairs an ISM PMI data point with the TNO-FCI data point from {latest.lead} months before "
-              f"it. The line is the model. It maps a month's TNO-FCI to the ISM PMI {latest.lead} months ahead. "
+              f"it. The line maps a month's TNO-FCI to the ISM PMI {latest.lead} months ahead. "
               f"{most_recent} show how far real months land from the line."))
 
     roles = ("ink", "accent", "soft", "band", "grid", "muted")

@@ -239,11 +239,11 @@ class FciPageTest(unittest.TestCase):
         lead, made = self.record["lead"], f"{pd.Timestamp(self.record['fitted_at']):%B %Y}"
         self.assertEqual(self.legend(figure), [
             ["One month", "The 12 most recent months"],
-            [f"The model, mapping TNO&#8209;FCI to the ISM PMI (in-sample R² {self.record['in_sample_r2']:.2f})",
+            [f"The straight line mapping TNO&#8209;FCI to the ISM PMI (in-sample R² {self.record['in_sample_r2']:.2f})",
              f"The {made} prediction, read off the line"]])
         note = re.search(r'<p class="fig-note">(.*?)</p>', figure, re.S).group(1)
         self.assertEqual(note, f"Each dot pairs an ISM PMI data point with the TNO-FCI data point from {lead} months "
-                         f"before it. The line is the model. It maps a month's TNO-FCI to the ISM PMI {lead} months "
+                         f"before it. The line maps a month's TNO-FCI to the ISM PMI {lead} months "
                          "ahead. The 12 most recent months show how far real months land from the line.")
         self.assertNotIn("R-squared", figure)
 
